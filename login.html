@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Login Page</title>
+<style>
+  body { font-family: Arial, sans-serif; padding: 20px; max-width: 400px; margin: auto; }
+  label { display: block; margin-top: 15px; }
+  input, select { width: 100%; padding: 8px; margin-top: 5px; }
+  button { margin-top: 20px; padding: 10px 15px; cursor: pointer; }
+  .btn-group { display: flex; justify-content: space-between; margin-top: 20px; }
+</style>
+</head>
+<body>
+<h2>Login Form</h2>
+<form id="loginForm">
+  <label>Name:<input type="text" id="name" required /></label>
+  <label>Email:<input type="email" id="email" required /></label>
+  <label>Password:<input type="password" id="password" required /></label>
+  <label>Domain:
+    <select id="domain" required>
+      <option value="">Select domain</option>
+      <option>IT</option>
+      <option>Marketing</option>
+      <option>Finance</option>
+      <option>HR</option>
+    </select>
+  </label>
+  <label>Education:<input type="text" id="education" required /></label>
+  <label>Enter Time:<input type="time" id="enter_time" required /></label>
+  <label>Aadhaar Number:<input type="text" id="aadhaar" pattern="\d{12}" title="Enter 12-digit Aadhaar number" required /></label>
+
+  <div class="btn-group">
+    <button type="submit">Submit</button>
+    <button type="button" id="goSignup">Sign Up</button>
+  </div>
+</form>
+
+<script>
+  document.getElementById('loginForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const name = this.name.value.trim();
+    const email = this.email.value.trim().toLowerCase();
+    const password = this.password.value;
+    const domain = this.domain.value;
+    const education = this.education.value.trim();
+    const enter_time = this.enter_time.value;
+    const aadhaar = this.aadhaar.value.trim();
+
+    if (!name || !email || !password || !domain || !education || !enter_time || !aadhaar) {
+      alert('Please fill all fields.');
+      return;
+    }
+
+    let users = JSON.parse(localStorage.getItem('users')) || [];
+    const exists = users.some(u => u.email === email);
+    if (exists) {
+      alert('Email already exists. Please sign up with another email or login from signup page.');
+      return;
+    }
+
+    users.push({ name, email, password, domain, education, enter_time, aadhaar });
+    localStorage.setItem('users', JSON.stringify(users));
+    alert('User details saved successfully!');
+    this.reset();
+  });
+
+  document.getElementById('goSignup').addEventListener('click', () => {
+    window.location.href = 'signup.html';
+  });
+</script>
+</body>
+</html>

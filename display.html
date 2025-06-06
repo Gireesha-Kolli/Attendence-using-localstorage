@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Display Page</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 900px; margin: auto; }
+    table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+    th, td { border: 1px solid #444; padding: 8px; text-align: left; }
+    th { background-color: #ddd; }
+    button { padding: 10px 15px; cursor: pointer; }
+    .center { text-align: center; }
+  </style>
+</head>
+<body>
+
+<h2 id="heading"></h2>
+<div id="tableContainer"></div>
+
+<script>
+  function getQueryParam(param) {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get(param);
+  }
+
+  const mode = getQueryParam('mode');
+  const heading = document.getElementById('heading');
+  const container = document.getElementById('tableContainer');
+  const allUsers = JSON.parse(localStorage.getItem('users')) || [];
+  const selectedEmails = JSON.parse(localStorage.getItem('attendanceSelected')) || [];
+
+  function removeDuplicates(users) {
+    const seen = new Set();
+    return users.filter(user => {
+      const key = JSON.stringify(user);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  function createTable(users, withCheckbox = false, checkboxName = 'selectUser') {
+    if (users.length === 0) return '<p>No user records found.</p>';
+
+    let html = `<form id="userForm"><table><thead><tr>`;
+    if (withCheckbox) html += `<th>Select</th>`;
+    html += `<th>Name</th><th>Email</th><th>Domain</th><th>Education</th><th>Enter Time</th><th>Aadhaar</th></tr></thead><tbody>`;
+
+    users.forEach(user => {
+      html += '<tr>';
+      if (withCheckbox) {
+        const checked = selectedEmails.includes(user.email) ? 'checked' : '';
+        html += `<td class="center"><input type="checkbox" name="${checkboxName}" value="${user.email}" ${checked}></td>`;
+      }
+      html += `<td>${user.name}</td><td>${user.email}</td><td>${user.domain}</td><td>${user.education}</td><td>${user.enter_time || ''}</td><td>${user.aadhaar || ''}</td></tr>`;
+    });
+
+    html += '</tbody></table></form>';
+    return html;
+  }
+
+  function renderStudents() {
+    heading.textContent = 'Students List';
+    container.innerHTML = createTable(allUsers, false);
+  }
+
+  function renderAttendance() {
+    heading.textContent = 'Attendance - Select Students';
+    const uniqueUsers = removeDuplicates(allUsers);
+    container.innerHTML = createTable(uniqueUsers, true);
+
+    const gateBtn = document.createElement('button');
+    gateBtn.textContent = '2nd Gate';
+    gateBtn.onclick = () => {
+      const checked = [...document.querySelectorAll('input[name="selectUser"]:checked')];
+      if (checked.length === 0) {
+        alert('Please select at least one user.');
+        return;
+      }
+
+      const emails = checked.map(c => c.value);
+      localStorage.setItem('attendanceSelected', JSON.stringify(emails));
+      window.location.href = 'display.html?mode=attendance2nd';
+    };
+    container.appendChild(gateBtn);
+  }
+
+  function render2ndGate() {
+    const selected = allUsers.filter(user => selectedEmails.includes(user.email));
+    const originalsOnly = selected.filter(user => !user.email.includes('+copy+'));
+
+    heading.textContent = '2nd Gate - Final Submit';
+    container.innerHTML = createTable(originalsOnly, true, 'submitUser');
+
+    const submitBtn = document.createElement('button');
+    submitBtn.textContent = 'Submit';
+    submitBtn.onclick = (e) => {
+      e.preventDefault();
+      const checked = [...document.querySelectorAll('input[name="submitUser"]:checked')];
+      if (checked.length === 0) {
+        alert('Please select at least one user to submit.');
+        return;
+      }
+
+      const selectedEmailsForSubmit = checked.map(c => c.value);
+      const submittedUsers = originalsOnly.filter(user => selectedEmailsForSubmit.includes(user.email));
+
+      // Save only selected originals to localStorage
+      localStorage.setItem('submittedUsers', JSON.stringify(submittedUsers));
+      localStorage.removeItem('attendanceSelected');
+
+      heading.textContent = 'Submitted Users (Final)';
+      container.innerHTML = createTable(submittedUsers, false);
+    };
+    container.appendChild(submitBtn);
+  }
+
+  if (mode === 'students') {
+    renderStudents();
+  } else if (mode === 'attendance') {
+    renderAttendance();
+  } else if (mode === 'attendance2nd') {
+    render2ndGate();
+  } else {
+    heading.textContent = 'Invalid mode in URL.';
+    container.innerHTML = '<p>Please use ?mode=students or ?mode=attendance</p>';
+  }
+</script>
+
+</body>
+</html>
